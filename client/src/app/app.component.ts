@@ -1,21 +1,42 @@
-import { Component } from '@angular/core';
-import Chatkit from '@pusher/chatkit-client';
-import axios from 'axios';
+import { Component, OnInit } from "@angular/core";
+import {
+  TokenProvider,
+  ChatManager,
+  PusherMessage,
+  PusherUser,
+  CurrentUser
+} from "pusher__chatkit-client";
+import axios from "axios";
+import { trigger, state, style, transition, animate } from "@angular/animations";
+
+declare var Aliplayer: any;
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  selector: "app-root",
+  templateUrl: "./app.component.html",
+  styleUrls: ["./app.component.css"],
+  animations: [
+    trigger('flyInOut', [
+      state('in', style({ transform: 'translateX(0)', display: 'block' })),
+      state('out', style({ transform: 'translateX(100%)', display: 'none' })),
+      transition('in <=> out', [animate('500ms ease-out')]),
+  ]),
+  ]
 })
+export class AppComponent implements OnInit {
+  player: object;
 
-export class AppComponent {
-  title = 'Angular Chatroom';
-  messages = [];
-  users = [];
-  currentUser: any;
+  isUsersHide:boolean = false;
+
+  messages: PusherMessage[] = [];
+
+  users: PusherUser[] = [];
+
+  currentUser: CurrentUser;
+
   currentRoom = {};
 
-  _username: string = '';
+  _username: string = "";
   get username(): string {
     return this._username;
   }
@@ -24,7 +45,7 @@ export class AppComponent {
     this._username = value;
   }
 
-  _message: string = '';
+  _message: string = "";
   get message(): string {
     return this._message;
   }
@@ -33,55 +54,78 @@ export class AppComponent {
     this._message = value;
   }
 
+  constructor() {}
+
+  ngOnInit() {
+    this.initPlayer();
+  }
+
   sendMessage() {
     const { message, currentUser } = this;
-    currentUser.sendMessage({
+    currentUser.sendSimpleMessage({
       text: message,
-      roomId: '<your room id>',
+      roomId: "daac5f27-4f2b-4d57-9b30-428b26c539e0"
     });
-    
-    this.message = '';
+
+    this.message = "";
   }
 
   addUser() {
     const { username } = this;
-    axios.post('http://localhost:5200/users', { username })
+    axios
+      .post("http://localhost:5200/users", { username })
       .then(() => {
-        const tokenProvider = new Chatkit.TokenProvider({
-          url: 'http://localhost:5200/authenticate'
+        const tokenProvider = new TokenProvider({
+          url: "http://localhost:5200/authenticate"
         });
 
-        const chatManager = new Chatkit.ChatManager({
-          instanceLocator: '<your instance locator>',
+        const chatManager = new ChatManager({
+          instanceLocator: "v1:us1:52d3305b-bc55-4e29-bec8-218eadf0e421",
           userId: username,
           tokenProvider
         });
 
-        return chatManager
-          .connect()
-          .then(currentUser => {
-            currentUser.subscribeToRoom({
-              roomId: '<your room id>',
-              messageLimit: 100,
-              hooks: {
-                onMessage: message => {
-                  this.messages.push(message);
-                },
-                onPresenceChanged: (state, user) => {
-                  this.users = currentUser.users.sort((a) => {
-                    if (a.presence.state === 'online') return -1;
-                    
-                    return 1;
-                  });
-                },
+        return chatManager.connect().then(currentUser => {
+          currentUser.subscribeToRoomMultipart({
+            roomId: "daac5f27-4f2b-4d57-9b30-428b26c539e0",
+            messageLimit: 100,
+            hooks: {
+              onMessage: message => {
+                this.messages.push(message);
               },
-            });
-
-            this.currentUser = currentUser;
-            this.users = currentUser.users;
-            
+              onPresenceChanged: (state, user) => {
+                this.users = currentUser.users.sort(a => {
+                  return a.presence === "online" ? -1 : 1;
+                });
+              }
+            }
           });
+
+          this.currentUser = currentUser;
+          this.users = currentUser.users;
+        });
       })
-        .catch(error => console.error(error))
+      .catch(error => console.error(error));
+  }
+
+  initPlayer() {
+    this.player = new Aliplayer(
+      {
+        id: "player-con",
+        source: "http://ivi.bupt.edu.cn/hls/cctv1hd.m3u8",
+        // source: "http://live.hijavascript.com/testApp/testStream.flv?auth_key=1579136532-0-0-5a96852cbbb213a3c3f5cb4d665a4cf4",
+        width: "100%",
+        height: "500px",
+        cover:
+          "https://img.alicdn.com/tps/TB1EXIhOFXXXXcIaXXXXXXXXXXX-760-340.jpg",
+        /* To set an album art, you must set 'autoplay' and 'preload' to 'false' */
+        autoplay: false,
+        preload: false,
+        isLive: false
+      },
+      function(player) {
+        console.log("The player is created");
+      }
+    );
   }
 }

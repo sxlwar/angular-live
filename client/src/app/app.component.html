@@ -1,39 +1,61 @@
-<div class="App">
-  <aside class="sidebar">
-    <section  *ngIf="!currentUser" class="join-chat">
-      <h2>Join Chat</h2>
-      <form (ngSubmit)="addUser()">
-        <input placeholder="Enter your username" type="text" name="username" [(ngModel)]="username" />
-      </form>
-    </section>
-    <section class="online-members">
-      <h2>Room Users</h2>
-      <ul class="user-list">
-        <li *ngFor="let user of users">
-          <span class="presence {{ user.presence.state }}"></span>
-          <span>{{ user.name }}</span>
-        </li>
-      </ul>
-    </section>
-  </aside>
+<div gdColumns="65% auto" gdGap="15px" class="live">
+  <div id="player-con"></div>
 
-  <main class="chat-window">
-    <header class="chat-header">
-      <h1>Chat</h1>
-      <span class="participants"></span>
-    </header>
-    <section class="chat-session">
-      <ul class="message-list">
-        <li class="user-message" *ngFor="let message of messages">
-          <span class="user-id">{{ message.senderId }}</span>
-          <span>{{ message.text }}</span>
-        </li>
-      </ul>
-    </section>
-    <footer class="chat-footer">
-      <form (ngSubmit)='sendMessage()'>
-        <input placeholder="Type a message. Hit Enter to send" type="text" name="message" [(ngModel)]="message">
-      </form>
-    </footer>
-  </main>
+  <div class="app">
+    <main class="chat-window">
+      <header fxLayoutAlign="space-between center" class="chat-header">
+        <h3>聊天室</h3>
+
+        <button
+          type="button"
+          (click)="isUsersHide = !isUsersHide"
+          class="btn btn-info btn-sm"
+        >
+          {{ isUsersHide ? "显示用户列表" : "隐藏用户列表" }}
+        </button>
+      </header>
+      <section class="chat-session">
+        <ul class="message-list">
+          <li class="user-message" *ngFor="let message of messages">
+            <span class="user-id">{{ message.sender.id }}</span>
+            <span>{{ message.parts[0].payload.content }}</span>
+          </li>
+        </ul>
+      </section>
+      <footer class="chat-footer">
+        <form fxLayout="row" (ngSubmit)="sendMessage()">
+          <input
+            placeholder="请输入要发送的内容"
+            type="text"
+            name="message"
+            [(ngModel)]="message"
+            class="form-control"
+          />
+          <button type="button" fxFlex="1 0 auto" (click)="sendMessage()" class="btn btn-primary">发送</button>
+        </form>
+      </footer>
+    </main>
+    <aside [@flyInOut]="isUsersHide ? 'out' : 'in'" class="sidebar">
+      <section *ngIf="!currentUser" class="join-chat">
+        <h4>加入聊天室</h4>
+        <form (ngSubmit)="addUser()">
+          <input
+            placeholder="输入昵称"
+            type="text"
+            name="username"
+            [(ngModel)]="username"
+          />
+        </form>
+      </section>
+      <section class="online-members">
+        <h4>当前用户</h4>
+        <ul class="user-list">
+          <li *ngFor="let user of users">
+            <span class="presence {{ user.presence }}"></span>
+            <span>{{ user.name }}</span>
+          </li>
+        </ul>
+      </section>
+    </aside>
+  </div>
 </div>
