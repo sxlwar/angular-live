@@ -112,8 +112,8 @@ export class AppComponent implements OnInit {
     this.player = new Aliplayer(
       {
         id: "player-con",
-        source: "http://ivi.bupt.edu.cn/hls/cctv1hd.m3u8",
-        // source: "http://live.hijavascript.com/testApp/testStream.flv?auth_key=1579136532-0-0-5a96852cbbb213a3c3f5cb4d665a4cf4",
+        // source: "http://ivi.bupt.edu.cn/hls/cctv1hd.m3u8", // CCTV 直播地址
+        source: "<换成拉流地址>",
         width: "100%",
         height: "500px",
         cover:
