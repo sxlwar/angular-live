@@ -1,36 +1,36 @@
-import { Component, OnInit } from "@angular/core";
-import {
-  TokenProvider,
-  ChatManager,
-  PusherMessage,
-  PusherUser,
-  CurrentUser
-} from "pusher__chatkit-client";
-import axios from "axios";
-import { trigger, state, style, transition, animate } from "@angular/animations";
+import { CurrentUser, PusherMessage } from 'pusher__chatkit-client';
+
+import { animate, state, style, transition, trigger } from '@angular/animations';
+import { Component, OnInit } from '@angular/core';
+
+import { TimService } from './providers/tim.service';
 
 declare var Aliplayer: any;
+
+export interface User {
+  name: string;
+}
 
 @Component({
   selector: "app-root",
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.css"],
   animations: [
-    trigger('flyInOut', [
-      state('in', style({ transform: 'translateX(0)', display: 'block' })),
-      state('out', style({ transform: 'translateX(100%)', display: 'none' })),
-      transition('in <=> out', [animate('500ms ease-out')]),
-  ]),
+    trigger("flyInOut", [
+      state("in", style({ transform: "translateX(0)", display: "block" })),
+      state("out", style({ transform: "translateX(100%)", display: "none" })),
+      transition("in <=> out", [animate("500ms ease-out")])
+    ])
   ]
 })
 export class AppComponent implements OnInit {
   player: object;
 
-  isUsersHide:boolean = false;
+  isUsersHide: boolean = false;
 
   messages: PusherMessage[] = [];
 
-  users: PusherUser[] = [];
+  users: User[] = [];
 
   currentUser: CurrentUser;
 
@@ -54,10 +54,13 @@ export class AppComponent implements OnInit {
     this._message = value;
   }
 
-  constructor() {}
+  constructor(public timService: TimService) {}
 
   ngOnInit() {
     this.initPlayer();
+    this.timService.initChatRoom("user0").subscribe(res => {
+      this.users = [{ name: res.ownerID }];
+    });
   }
 
   sendMessage() {
@@ -72,40 +75,9 @@ export class AppComponent implements OnInit {
 
   addUser() {
     const { username } = this;
-    axios
-      .post("http://localhost:5200/users", { username })
-      .then(() => {
-        const tokenProvider = new TokenProvider({
-          url: "http://localhost:5200/authenticate"
-        });
+    this.timService.addUser({ username, id: "xxxxx" });
 
-        const chatManager = new ChatManager({
-          instanceLocator: "v1:us1:52d3305b-bc55-4e29-bec8-218eadf0e421",
-          userId: username,
-          tokenProvider
-        });
-
-        return chatManager.connect().then(currentUser => {
-          currentUser.subscribeToRoomMultipart({
-            roomId: "daac5f27-4f2b-4d57-9b30-428b26c539e0",
-            messageLimit: 100,
-            hooks: {
-              onMessage: message => {
-                this.messages.push(message);
-              },
-              onPresenceChanged: (state, user) => {
-                this.users = currentUser.users.sort(a => {
-                  return a.presence === "online" ? -1 : 1;
-                });
-              }
-            }
-          });
-
-          this.currentUser = currentUser;
-          this.users = currentUser.users;
-        });
-      })
-      .catch(error => console.error(error));
+    // TODO 添加成功后加入到 this.users
   }
 
   initPlayer() {

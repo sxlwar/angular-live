@@ -27,7 +27,9 @@
     "axios": "^0.18.0",
     "bootstrap": "^4.3.1",
     "core-js": "^2.5.4",
+    "cos-js-sdk-v5": "^0.5.17",
     "rxjs": "~6.3.3",
+    "tim-js-sdk": "^2.4.1",
     "zone.js": "~0.8.26"
   },
   "devDependencies": {
