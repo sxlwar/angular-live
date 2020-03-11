@@ -1,6 +1,6 @@
 import COSSDK from 'cos-js-sdk-v5';
-import { from, Observable, Subject } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, from, Observable, of, Subject } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 import TIM from 'tim-js-sdk';
 
 import { Injectable } from '@angular/core';
@@ -27,14 +27,79 @@ export interface UserSig {
   userSig: string;
 }
 
-interface CreateGroupRes {
+export interface CreateGroupRes {
   ownerID: string;
   groupID: string;
 }
 
+export interface JoinGroupReq {
+  username: string;
+  userId: string;
+  groupID: string;
+}
+
+export interface JoinGroupRes {
+  username: string;
+  userId: string;
+  groupID: string;
+  status: string;
+}
+
+export interface GetGroupMemberListReq {
+  groupID: string;
+  count?: number;
+  offset?: number;
+}
+
+export interface GetGroupMemberListRes {
+  userID: string;
+  avatar: string;
+  nick: string;
+  role: string;
+  joinTime: number;
+  lastSendMsgTime: string;
+  nameCard: string;
+  muteUntil: number;
+  memberCustomField: any[];
+}
+
+export interface SendTextMessageReq {
+  to: string; // groupID
+  text: string;
+}
+
+export interface TextMessagePayload {
+  text: string;
+}
+
+export interface Message<T> {
+  ID: string;
+  clientSequence: number;
+  conversationID: string;
+  conversationType: string;
+  flow: string;
+  from: string;
+  isRead: boolean;
+  isResend: boolean;
+  isRevoked: boolean;
+  isSystemMessage: boolean;
+  messagePriority: number; // 2.4.2 应该修改成了priority字段
+  payload: T;
+  status: "success" | "unSend" | "fail";
+  time: number; // timestamp
+  to: string;
+  type: string;
+}
+
+export interface SendTextMessageRes extends Message<TextMessagePayload> {}
+
 @Injectable({ providedIn: "root" })
 export class TimService {
   tim: any;
+
+  textMessages$: BehaviorSubject<
+    Message<TextMessagePayload>
+  > = new BehaviorSubject(null);
 
   constructor() {}
 
@@ -124,7 +189,59 @@ export class TimService {
   /**
    * 在聊天群中添加用户
    */
-  addUser(user: { username: string; id: string }) {
-    console.log(user);
+  addUser(user: JoinGroupReq): Observable<JoinGroupRes> {
+    const { username, groupID } = user;
+
+    return from(this.tim.joinGroup({ groupID, applyMessage: username })).pipe(
+      map(imResponse => {
+        const {
+          code,
+          data: { status }
+        } = imResponse as any;
+
+        if (code !== 0) {
+          throw new Error(`Add user to group(${groupID}) failed`);
+        } else {
+          return { ...user, status };
+        }
+      })
+    );
+  }
+
+  /**
+   * 获取聊天室内的用户列表
+   */
+
+  getGroupMemberList(
+    req: GetGroupMemberListReq
+  ): Observable<GetGroupMemberListRes | null> {
+    if (!!req.groupID) {
+      return from(this.tim.getGroupMemberList(req));
+    } else {
+      return of(null);
+    }
+  }
+
+  sendTextMessage({ to, text }: SendTextMessageReq) {
+    const message = this.tim.createTextMessage({
+      to,
+      conversationType: TIM.TYPES.CONV_GROUP,
+      payload: { text }
+    });
+
+    this.tim.sendMessage(message).then(imResponse => {
+      console.log("response------>", imResponse);
+      const {
+        data: { message }
+      } = imResponse as any;
+
+      this.textMessages$.next(message);
+    });
+  }
+
+  getTextMessages(groupID: string): Observable<SendTextMessageRes> {
+    return this.textMessages$.pipe(
+      filter(message => message && message.to === groupID)
+    );
   }
 }
