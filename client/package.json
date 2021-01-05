@@ -24,7 +24,7 @@
     "@angular/router": "~7.0.0",
     "@ng-bootstrap/ng-bootstrap": "^5.1.5",
     "@pusher/chatkit-client": "^1.13.4",
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "bootstrap": "^4.3.1",
     "core-js": "^2.5.4",
     "rxjs": "~6.3.3",
